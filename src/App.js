@@ -4,7 +4,7 @@ import {Markup, Editor, Container, Column, Row, RuleInput, RuleLabel, StyleInput
 
  import hljs from 'highlight.js';
 
-import { rando } from './utils';
+import { rando, getRandomPoem } from './utils';
 
 console.log(rando);
 console.log(rando.color());
@@ -153,14 +153,36 @@ class App extends Component {
 
     let newStyles = "".concat(styles).replace(",", "");
 
+    while(newStyles.includes('random')){
+
+      newStyles = newStyles.replace('random', rando.color())
+
+    }
+
+
     return newStyles;
+  }
+
+  
+  getRandomText = async () => {
+    try{
+      let poem = await getRandomPoem()
+      this.handleChange({
+        target: {
+          name: 'editor',
+          value: poem
+        }
+      })
+    }catch(error){
+      console.log("getRandomPoem error", error)
+    }
   }
 
   render() {
 
     //object assembly shorthand
     let {editor} = this.state;
-    let { handleChange, newFields, rules, convertToMarkup, prepareStyle } = this;
+    let { handleChange, newFields, rules, convertToMarkup, prepareStyle, getRandomText } = this;
 
     return (
       <Container>
@@ -173,7 +195,7 @@ class App extends Component {
           </Button>
         </Column>
         <Column>
-          <Button>Random Text</Button>
+          <Button onClick={ getRandomText }>Random Text</Button>
           <Document>
             <Editor
               name={"editor"}
