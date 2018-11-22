@@ -4,6 +4,11 @@ import {Markup, Editor, Container, Column, Row, RuleInput, RuleLabel, StyleInput
 
  import hljs from 'highlight.js';
 
+import { rando } from './utils';
+
+console.log(rando);
+console.log(rando.color());
+
 class App extends Component {
 
 
@@ -18,12 +23,13 @@ class App extends Component {
 
   handleChange = (event) =>{
     let { name, value } = event.target;
+    console.log(name);
     this.setState({
       [name]: value
     })
   }
 
- rules = () => {
+ get rules(){
 
   let { rules } = this.state;
   let array = [];
@@ -87,17 +93,80 @@ class App extends Component {
       }
     })
   }
+
+  convertToMarkup = (text = "") => {
+    return {
+      __html: hljs.highlightAuto(text).value
+    }
+  }
+
+  language = (newRules) => {
+    return () => ({
+      contains: [
+        ...newRules
+      ]
+    })
+  }
+
+  registerLanguage = (state) => {
+    let {rules} = state;
+    let ruleObjects = [];
+    for(let i = 0; i < rules; i++){
+      let newRule = {
+        className: state[`name${i}`],
+        begin: state[`begin${i}`],
+        end: state[`end${i}`]
+      }
+
+      let {className, begin, end} = newRule;
+
+      if(
+          className.length > 1 &&
+          begin.length > 1 &&
+          end.length > 1
+        ){
+          begin = new RegExp(begin);
+          end = new RegExp(end);
+          ruleObjects.push(newRule);
+      }
+    }
+    hljs.registerLanguage('language', this.language(ruleObjects));
+    hljs.configure({
+      languages: ['language']
+    })
+  }
+
+  componentsWillUpdate(nextProps, nextState){
+    this.registerLanguage(nextState);
+  }
+
+  prepareStyle = () =>{
+    let {rules} = this.state;
+    let styles = [];
+    for(let i = 0; i < rules; i++){
+      styles.push(`
+          .hljs-${this.state['name' + i]} {
+            ${this.state['style' + i]}
+          }
+      `)
+    }
+
+    let newStyles = "".concat(styles).replace(",", "");
+
+    return newStyles;
+  }
+
   render() {
 
     //object assembly shorthand
-    let {value} = this.state;
-    let { handleChange, newFields, rules } = this;
+    let {editor} = this.state;
+    let { handleChange, newFields, rules, convertToMarkup, prepareStyle } = this;
 
     return (
       <Container>
         <Column>
 
-          {rules()}
+          { rules }
 
           <Button onClick={ newFields }>
             New Rule
@@ -107,11 +176,14 @@ class App extends Component {
           <Button>Random Text</Button>
           <Document>
             <Editor
-              name={"Editor"}
-              value={ value } 
+              name={"editor"}
+              value={ editor } 
               onChange={ handleChange }
             />
-            <Markup />
+            <Markup 
+              customStyles={prepareStyle()}
+              dangerouslySetInnerHTML={ convertToMarkup(editor) }
+            />
           </Document>
         </Column>
       </Container>
